@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: smart-strategy-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: rizwanzahid
+      POSTGRES_DB: smart_strategy_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./SmartStrategyGame.Backend
+      dockerfile: Dockerfile
+    container_name: smart-strategy-backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=smart_strategy_db;Username=admin;Password=rizwanzahid
+      - AI_SERVICE_URL=http://ai-service:8000
+    ports:
+      - "5000:8080"
+    depends_on:
+      - postgres
+      - ai-service
+
+  ai-service:
+    build:
+      context: ./SmartStrategyGame.AI
+      dockerfile: Dockerfile
+    container_name: smart-strategy-ai
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart-strategy-frontend
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8080/api
+      - NEXT_PUBLIC_SIGNALR_BASE_URL=http://backend:8080/hubs
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
